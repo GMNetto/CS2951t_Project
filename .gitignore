@@ -1,0 +1,10 @@
+DataDrivenVision_SampleCode/
+bin/
+include/
+lib/
+local/
+py-faster-rcnn/
+share/
+*.txt
+analysis/results*/
+

@@ -1,0 +1,49 @@
+There were three versions of the network already trained, the first one with the default values, another one with low
+learning rate and another with low momentum. All of them after 20000 had problems to converge. They all
+have an extra layer after fc7 and before the fully connected layer specific to the classification. 
+After tests involving the test algorithm and with images, the network does not classify at all.
+Until now, there are just tests that perform with one image as a query. There is the possibility to 
+get the regions and scores for an image and to use KDtree to do KNN with that image.
+
+Now I am training the network with lower momentum and lr with different lr_mult in the layer after.
+
+
+Actually, I was able to print the weights. I am training with the old configuration and although the weights are converging. The performance is the same(not working). I have some theories about what is happening:
+1 - There is no other way, the extra layer is just distroying the classification.I will have to change the extra layer position. Between the layer fc6 and fc7 looks like a good place. Or maybe I should add one more layer to keep the weights in the cls layer.
+2 - I should increase the learning rate or change the back propagation method. Maybe now that i can keep track of the weights, I just have to look more for a new minimum.
+3 - I should keep training for more iterations, maybe I just have to wait more(makes less sense now, with the weights).
+4 - The fine tuning process over the same training set cause overfitting in the network(I should ask how to fix it). 
+
+The suggested test consisted of analyze the layer that goes to zero. So in four there are three scenarios:
+1 - testing normal, fine tuning all layers;
+2 - testing freezing, fine tuning just autoencoder and cls_score;
+3 - testing with the autoencoder between fc6 and fc7.
+
+I will compare it with the normal output, when it works.
+
+After it I have to compare with the autoencoder keeps the distance.
+
+For case 2, the input of cls_score is non-zero, however the output is all zeros.
+
+It looks like the error was caused by a wrong connection between the layers in the test model. Right now, I am getting results(really bad ones). However, at least I can define some tests with the autoencoder and try to improve the detector performance with thr autoencoder.
+
+
+There are two tests that i will try at the same time:
+1 - Try to get the best possible detector with the autoencoder. So, I will try freezing the layers and not, using the pre trained model or the image net weights.
+2 - I still have to compare the distance between two images using the autoencoder and the fc7(or cls_score) from the original model. This will help me to understand if the autoencoder is, in fact, learning something.
+
+
+It looks like the classifier is learning so the next step is to define the results that I will be looking for. 
+
+First defining the metric, for every image there will be a set of proposals. Each proposal has a set of objects inside. For each proposal I will retrieve an k images, if my class is inside one of those images, it is a hit, otherwise it is a miss. 
+How to define #true positives is the number of hits, #false negative is the number of misses. Take also number of classes that were in the pool and did not match => #false positives and number of classes that were not in both.
+
+I will do this analysis for a set of k's(I still have to define). It will also compare between image retrievals with different features fc7, pca, autoencoder. To select if I will use LSH, KDTree or brute force I will select the one that gets the best result for the autoencoder(varying the K).
+
+This will be another experiment. 
+
+I have also to select the pool, I will consider 3000 first images and a testing set of 2000 images. 
+
+Selecting the features might be a problem because the selected might be not enough, so prepare other approach that takes the featuers created by fc7 and extract the autoencoder for them.
+
+The time analysis will also be done later. 
