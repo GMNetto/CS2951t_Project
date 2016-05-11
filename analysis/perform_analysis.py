@@ -24,10 +24,12 @@ total_retrieved = 0
 number_features = 0
 pca = None
 timer = Timer()
+timer_pca = Timer()
+timer_total = Timer()
 start_interval = 0
 step_interval = 1000
 end_interval = 5000
-pca_dimensions = 128
+pca_dimensions = 256
 
 def parser():
     parser = argparse.ArgumentParser(description='Process some integers.')
@@ -87,11 +89,15 @@ def get_pca(image_name):
     return pca.transform(code)
 
 def train_pca(file_dir, s, t, i):
-    from sklearn.decomposition import IncrementalPCA	
+    from sklearn.decomposition import IncrementalPCA
+    global timer_pca
+    timer_pca = Timer()	
+    timer_pca.tic()
     ipca = IncrementalPCA(n_components=pca_dimensions)
     for counter in range(s, t, i):
         features_file = np.load(file_dir + '/pca' + str(counter) + '_code.npy')
 	ipca.partial_fit(features_file[:, 0:4096])
+	timer_pca.toc()
     return ipca
 
 def compare_image(image_name, tree, my_autoencoder, k_nearest, codes_image, number_features, get_feature):
@@ -145,6 +151,28 @@ def get_total_number_features(codesdir, s, t, i, prefix):
         features_file = np.load(codesdir + prefix + str(counter) + '_code.npy')
 	total = features_file.shape[0] + total
     return total
+
+def histogram_dataset(codesdir, s, t, i, prefix):
+    histogram = {}
+    total_images = 0
+    for counter in range(s, t, i):
+	features_file = np.load(codesdir + prefix + str(counter) + '_code.npy')
+	list_images1 = features_file[:, -1].tolist()
+	list_images0 = features_file[:, -2].tolist()
+	total_images += len(list_images1)
+        for i in range(0, len(list_images0)):
+            year = str(int(list_images0[i]))
+	    image_number = str(int(list_images1[i]))
+	    while len(image_number) < 6:
+                image_number = '0' + image_number
+	    retrieved_classes = get_object_class(annotations_dir + year + '_' + image_number)
+	    for object_class in retrieved_classes:
+	        histogram[object_class] = histogram.setdefault(object_class, 0) + 1
+    histogram_file = open("histogram.txt", 'w')
+    for object_class in histogram.keys():
+	histogram_file.write(object_class + ' ' + str(histogram[object_class]) + '\n')
+    histogram_file.close()
+    print total_images
 
 
 def create_neighbors_structure(codes, size_feature, metric_name, algorithm_name):
@@ -248,6 +276,9 @@ if __name__=="__main__":
     args = parser()
     global number_features
     number_features = args.number_features
+    global timer_total
+    timer_total = Timer()
+    timer_total.tic()
     if args.action == 'fc7':
         test_general(args.testfile, args.model, args.solver, args.codesdir, args.algorithm, args.metric, args.number_features, get_fc7, 'pca')
     elif args.action == 'auto':
@@ -258,8 +289,12 @@ if __name__=="__main__":
         test_general(args.testfile, args.model, args.solver, args.codesdir, args.algorithm, args.metric, args.number_features, get_pca, 'pca_red_')
     elif args.action == 'getknn':
 	get_best_matches_images(args.testfile, args.model, args.solver, args.codesdir, args.algorithm, args.metric, args.number_features, get_autoencoder, 'auto')
-   
+    elif args.action == 'histogram':
+        histogram_dataset(args.codesdir, start_interval, end_interval, step_interval, 'auto')
+   	timer_total.toc()
     print 'Average time search elements: ', timer.average_time
+    print 'Average time building pca: ', timer_pca.average_time
+    print 'Total time: ', timer_total.average_time
 
 
     #print 'results: ', len(result), result[1], result[0], codes_image[result[1].astype(int), -1]

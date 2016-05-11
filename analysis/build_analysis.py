@@ -62,9 +62,9 @@ CLASSES = ('__background__',
 #classes_dir = "/ltmp/gustavo-2951t/dd_cv/py-faster-rcnn/data/VOCdevkit2007/VOC2007/ImageSets/Main/"
 classes_dir = "../py-faster-rcnn/data/VOCdevkit/VOC2012/ImageSets/Main/"
 
-number_features = 128
+number_features = 256
 
-number_dim_pca = 128
+number_dim_pca = 256
 
 number_best_features = 3
 
@@ -90,7 +90,7 @@ def filter_code3(scores, boxes):
 	dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])).astype(np.float32)
 	keep = nms(dets, NMS_THRESH)
 	dets = dets[keep, :]
-	inds = np.where(dets[:, -1] >= 0.8)[0]
+	inds = np.where(dets[:, -1] >= CONF_THRESH)[0]
 	for index in inds:
 	    list_features.append((keep[index], cls_ind))
     return list_features
